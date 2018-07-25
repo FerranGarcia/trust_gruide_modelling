@@ -121,7 +121,7 @@ def main(session):
     memory_service = session.service("ALMemory")
     motion_service = session.service("ALMotion")
 
-    speech_service = session.service("ALTextToSpeech")
+    #speech_service = session.service("ALTextToSpeech")
 
     leds_service = session.service("ALLeds")
 
@@ -208,23 +208,10 @@ def main(session):
             posture_service.goToPosture("Stand", 0.5)
 
         elif ch == 'h': #pressed key h - help menu
-            menu(speech_service,tablet_service)
+            menu(tablet_service)
 
-def menu(speech_service,tablet_service):
-    speech_service.say("Using yoru keyboard, you can command me to do several things.")
-    speech_service.say("Here it is the list of all things that you can make me do:")
-    speech_service.say("Use the keyboard arrows for moving me around, I can go forward, backward and turn left and right")
-    speech_service.say("Use the keyboard key a for increasing the velocity of my navigation")
-    speech_service.say("Use the keyboard key d for decreasing the velocity of my navigation")
-    speech_service.say("Use the keyboard key s for stopping my navigation")
-    speech_service.say("Use the keyboard key g for moving my right arm")
-    speech_service.say("Use the keyboard key t for startign the interaction")
-    speech_service.say("Use the keyboard key b for changing the colour of my shoulder")
-    speech_service.say("Use the keyboard key p for letting me assume my basic stand position")
-    speech_service.say("Use the keyboard key q to exit")
-    speech_service.say("Use the keyboard key h for this menu")
-
-    tablet_service.showImage("heart.png")
+def menu(tablet_service):
+    tablet_service.showImage("http://198.18.0.1/menu_keyboard_control.png")
 
     time.sleep(3)
 
