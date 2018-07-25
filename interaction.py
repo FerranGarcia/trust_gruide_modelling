@@ -29,11 +29,23 @@ except ImportError:
             termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
         return ch
 
+def arrived(motion_service,speech_service):
+    # rotate on itself
+    turn(motion_service, 0, 0, -1.5, 0.2)
+
+    speech_service.say("Here we reached the destination! Thank you for following me.")
+
 def blink(leds_service):
     #blink
-    hexColour = int('0x00%02x%02x%02x' % (255, 255, 0), 0)
-    leds_service.fadeRGB("ChestLeds", hexColour, 10)
 
+    name = "ChestLeds"
+
+    hexColour = int('0x00%02x%02x%02x' % (255, 255, 0), 0)
+    leds_service.fadeRGB(name, hexColour, 0)
+
+    time.sleep(2)
+
+    leds_service.off(name)
     return
 
 def interaction(motion_service, speech_service):
@@ -87,6 +99,9 @@ def gesture(motion_service):
     bent =  0.478261
     rwrist = 1.
 
+    # rotate slightly on right
+    turn(motion_service, 0, 0, -0.4, 0.1)
+
     names = ["RShoulderPitch", "RShoulderRoll", "RElbowYaw", "RElbowRoll", "RWristYaw"]
     angleLists = [pitch, yaw, roll, bent, rwrist]
     times = [1.0, 1.0, 1.0, 1.0, 1.0]
@@ -113,7 +128,7 @@ def move(motion_service, x, y, z, vel, acc):
 
 def turn(motion_service, x, y, z, vel):
     motion_service.killMove()
-    motion_service.moveTo(x, y, z, vel)
+    motion_service.moveTo(0, 0, z, vel)
     return
 
 
@@ -121,14 +136,17 @@ def main(session):
     memory_service = session.service("ALMemory")
     motion_service = session.service("ALMotion")
 
-    #speech_service = session.service("ALTextToSpeech")
+    motion_service.setExternalCollisionProtectionEnabled("All", False)
+
+    speech_service = session.service("ALTextToSpeech")
 
     leds_service = session.service("ALLeds")
 
     posture_service = session.service("ALRobotPosture")
 
-   # Send robot to Stand Init
-    posture_service.goToPosture("Stand", 0.5)
+    life_service = session.service("ALAutonomousLife")
+
+    life_service.setAutonomousAbilityEnabled("BackgroundMovement", True)
 
     tablet_service = session.service("ALTabletService")
 
@@ -142,41 +160,32 @@ def main(session):
         # a -> accelerate
         # d -> decrease acceleration
 
-    dir = -1
-
     vel = 0.1
     acc = 0.1
 
     while True:
         ch = readchar.readkey()
 
+        print("you pressed: "+ch)
+
         if ch == 'q': # pressed key "q"  - exit
             print('bye!')
+            blink(leds_service)
             motion_service.killMove()
-            posture_service.goToPosture("Stand", 0.5)
             break
 
         # NAVIGATION
         elif ch == readchar.key.UP: #pressed key arrow up - move forward
-            dir = 1
             move(motion_service, 1, 0, 0, vel, acc)
 
         elif ch == readchar.key.DOWN: #pressed key arrow down - move backward
-            dir = 2
-
             move(motion_service, -1, 0, 0, vel, acc)
 
         elif ch == readchar.key.RIGHT: #pressed key arrow right - rotate right
+            move(motion_service, 0, 0, -vel, vel, acc)
 
-            if dir == 1:
-                move(motion_service, 1, 0, -vel, vel, acc)
-            else:
-                move(motion_service, -1, 0, -vel, vel, acc)
         elif ch == readchar.key.LEFT: #pressed key arrow left - rotate left
-            if dir == 1:
-                move(motion_service, 1, 0, vel, vel, acc)
-            else:
-                move(motion_service, -1, 0, vel, vel, acc)
+            move(motion_service, 0, 0, vel, vel, acc)
 
         elif ch == 'a' or ch == 'd':
             if ch == 'a':
@@ -197,10 +206,12 @@ def main(session):
 
         elif ch == 'b': #pressed key b - blink leds
             blink(leds_service)
-        elif ch == 't': #pressed key t - start interaction with people-obstacles
+        elif ch == 'i': #pressed key i - start interaction with people-obstacles
             interaction(motion_service,speech_service)
         elif ch == 'g': #pressed key g - make gesture
             gesture(motion_service)
+        elif ch == 't': #pressed key t - the robot will tell the participant they arrived
+            arrived(motion_service,speech_service)
 
         # GENERIC USUFUL COMMANDS
 
@@ -213,7 +224,7 @@ def main(session):
 def menu(tablet_service):
     tablet_service.showImage("http://198.18.0.1/menu_keyboard_control.png")
 
-    time.sleep(3)
+    time.sleep(6)
 
     # Hide the web view
     tablet_service.hideImage()
